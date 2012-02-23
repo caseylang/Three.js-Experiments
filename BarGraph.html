@@ -28,7 +28,7 @@ var clock = new THREE.Clock();
 var SCREEN_HEIGHT = window.innerHeight;
 var SCREEN_WIDTH = window.innerWidth;
 var container, stats;
-var camera, scene, renderer, mesh, light, ambientLight;
+var camera, scene, projector, renderer, mesh, light, ambientLight, barGraph;
 var grid = [];
 var paused = false;
 var down = false;
@@ -38,7 +38,7 @@ var rot = Math.PI / 3;
 var max = 0;
 var running = 0;
 var dynamicHeight = {y:1};
-
+var mouse = { x:0, y:0 }, INTERSECTED, INTERSECTED_CLICK;
 
 THREE.LeftAlign = 1;
 THREE.CenterAlign = 0;
@@ -61,6 +61,7 @@ function init() {
 
     renderer.setClearColorHex(0xEEEEEE, 1.0);
     renderer.shadowMapEnabled = true;
+    renderer.shadowMapSoft = true;
     renderer.shadowMapWidth = 1024;
     renderer.shadowMapHeight = 1024;
     renderer.shadowCameraFov = 35;
@@ -88,66 +89,68 @@ function init() {
     plane.position.y = -10;
     plane.receiveShadow = true;
     plane.doubleSided = true;
+    plane.name = 'Plane';
     scene.add(plane);
 
-    for (var y = 0; y < 10; y++) {
-        grid[y] = [];
-        for (var x = 0; x < 10; x++) {
-            grid[y][x] = [];
-            grid[y][x].height = (x * y) + 5;
-            max = grid[y][x].height > max ? grid[y][x].height : max;
-        }
-    }
-
-    var barGraph = new THREE.Object3D();
+    barGraph = new THREE.Object3D();
     scene.add(barGraph);
+    var length = {x:10, y:10};
 
-    //Marks 1-10 on the graph
-    for (var j = 0; j < grid.length; j++) {
-        var array = grid[j];
-        var title = alignPlane(createText2D(j + 1), THREE.CenterAlign, THREE.CenterAlign);
-        title.scale.set(0.25, 0.25, 0.25);
-        title.position.x = (-1 - (array.length - 1) / 2) * 16;
-        title.position.z = -(j - (grid.length - 1) / 2) * 16;
-        title.position.y = 1;
-        title.rotation.x = -Math.PI / 2;
-        barGraph.add(title);
-    }
-
-    //Marks A-J on the graph
-    for (var j = 0; j < grid[0].length; j++) {
-        var array = grid[0];
-        var c = String.fromCharCode(j + 65);
-        var title = alignPlane(createText2D(c), THREE.CenterAlign, THREE.CenterAlign);
-        title.scale.set(0.25, 0.25, 0.25);
-        title.position.x = (j - (array.length - 1) / 2) * 16;
-        title.position.z = -(-1 - (grid.length - 1) / 2) * 16;
-        title.position.y = 1;
-        title.rotation.x = -Math.PI / 2;
-        barGraph.add(title);
-    }
-
-    //Draws the bars
-    for (var j = 0; j < grid.length; j++) {
-        var array = grid[j];
-        for (var i = 0; i < array.length; i++) {
-            var mat = new THREE.MeshPhongMaterial({color:0xFFAA55});
-            mat.color.setHSV(0.2 + 0.8 * array[i].height / max, 0.8, 1);
-            var geo = new THREE.CubeGeometry(8, 2, 8);
-            var mesh = new THREE.Mesh(geo, mat);
-            mesh.position.x = (i - (array.length - 1) / 2) * 16;
-            mesh.position.y = 2 / 2;
-            mesh.position.z = -(j - (grid.length - 1) / 2) * 16;
-            mesh.castShadow = mesh.receiveShadow = true;
-            barGraph.add(mesh);
-            grid[j][i].bar = mesh;
-            grid[j][i].done = false;
+    //todo: this is cheating. You'll need to find a max if you want to use real data.
+    max = ((length.x - 1) * (length.y - 1)) + 5;
+    for (var y = 0; y < length.y; y++) {
+        drawYLabel(y, length);
+        for (var x = 0; x < length.x; x++) {
+            grid[running] = [];
+            drawXLabel(x, length);
+            grid[running].height = (x * y) + 5;
+            drawBar(y, x, length, grid[running].height);
             running++;
         }
     }
 
     renderer.render(scene, camera);
+    projector = new THREE.Projector();
     window.addEventListener('resize', onWindowResize, false);
+    document.addEventListener('mousemove', onDocumentMouseMove, false);
+}
+
+function drawBar(y, x, length, height) {
+    //Draws the bars
+    var mat = new THREE.MeshPhongMaterial({color:0xFFAA55});
+    mat.color.setHSV(0.2 + 0.8 * height / max, 0.8, 1);
+    var geo = new THREE.CubeGeometry(8, 2, 8);
+    var mesh = new THREE.Mesh(geo, mat);
+    mesh.position.x = (x - (length.x - 1) / 2) * 16;
+    mesh.position.y = 2 / 2;
+    mesh.position.z = -(y - (length.y - 1) / 2) * 16;
+    mesh.castShadow = mesh.receiveShadow = true;
+    mesh.name = grid[running].name = running;
+    grid[running].done = false;
+    barGraph.add(mesh);
+}
+
+function drawYLabel(y, length) {
+    //Marks 1-10 on the graph
+    var title = alignPlane(createText2D(y + 1), THREE.CenterAlign, THREE.CenterAlign);
+    title.scale.set(0.25, 0.25, 0.25);
+    title.position.x = (-1 - (length.x - 1) / 2) * 16;
+    title.position.z = -(y - (length.y - 1) / 2) * 16;
+    title.position.y = 1;
+    title.rotation.x = -Math.PI / 2;
+    barGraph.add(title);
+}
+
+function drawXLabel(x, length) {
+    //Marks A-J on the graph
+    var c = String.fromCharCode(x + 65);
+    var title = alignPlane(createText2D(c), THREE.CenterAlign, THREE.CenterAlign);
+    title.scale.set(0.25, 0.25, 0.25);
+    title.position.x = (x - (length.x - 1) / 2) * 16;
+    title.position.z = -(-1 - (length.y - 1) / 2) * 16;
+    title.position.y = 1;
+    title.rotation.x = -Math.PI / 2;
+    barGraph.add(title);
 }
 
 function createTextCanvas(text, color, font, size) {
@@ -191,8 +194,29 @@ function alignPlane(plane, horizontalAlign, verticalAlign) {
     return obj;
 }
 
+function onDocumentMouseMove(event) {
+    event.preventDefault();
+    mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+    mouse.y = -( event.clientY / window.innerHeight ) * 2 + 1;
+}
+
 document.onclick = function () {
-    if (!moved) alert('You clicked');
+    //todo: When you click on a bar it changes colors, and that's cool. But when you click on a different bar, the first bar doesn't change back to the original color. And that's not cool.
+    //it's because Intersected_Click is getting set = Intersected.currentHex, and you're changing Intersected.currentHex after.
+    if (!moved) {
+        var intersects = findIntersections();
+        if (intersects.length > 0) {
+            if (INTERSECTED_CLICK != intersects[ 0 ].object && intersects[ 0 ].object.name != 'Plane') {
+                if (INTERSECTED_CLICK) {
+                    INTERSECTED_CLICK.material.color.setHex(INTERSECTED_CLICK.currentHex);
+                }
+                INTERSECTED_CLICK = intersects[ 0 ].object;
+                INTERSECTED_CLICK.currentHex = INTERSECTED.currentHex;
+                INTERSECTED_CLICK.material.color.setHex(0xa854fe);
+                INTERSECTED.currentHex = INTERSECTED_CLICK.material.color.getHex();
+            }
+        }
+    }
 }
 
 window.onmousedown = function (ev) {
@@ -231,24 +255,50 @@ function render(t) {
         renderer.clear();
         camera.lookAt(scene.position);
         renderer.render(scene, camera);
+
         //todo: Dear god man, make this better.
         if (running != 0) {
             dynamicHeight.y += .5;
             for (var j = 0; j < grid.length; j++) {
-                var array = grid[j];
-                for (var i = 0; i < array.length; i++) {
-                    var barHeight = array[i].height / max * 80;
-                                        if (dynamicHeight.y < barHeight) {
-                        grid[j][i]['bar'].scale.y = dynamicHeight.y / 2;
-                        grid[j][i]['bar'].position.y = grid[j][i]['bar'].scale.y / 2;
-                    } else if (dynamicHeight.y > barHeight && !grid[j][i]['done']) {
-                        running--;
-                        grid[j][i]['done'] = true;
-                    }
+                var barHeight = grid[j].height / max * 80;
+                var bar = barGraph.getChildByName(grid[j].name);
+                if (dynamicHeight.y < barHeight) {
+                    bar.scale.y = dynamicHeight.y / 2;
+                    bar.position.y = bar.scale.y / 2;
+                } else if (dynamicHeight.y > barHeight && !grid[j].done) {
+                    grid[j].done = true;
+                    running--;
                 }
+            }
+        } else if (running <= 0 && !down) {
+            var intersects = findIntersections();
+            if (intersects.length > 0) {
+                if (INTERSECTED != intersects[ 0 ].object && intersects[ 0 ].object.name != 'Plane') {
+                    if (INTERSECTED) {
+                        INTERSECTED.material.color.setHex(INTERSECTED.currentHex);
+                        INTERSECTED.receiveShadow = false;
+                    }
+                    INTERSECTED = intersects[ 0 ].object;
+                    INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
+                    INTERSECTED.material.color.setHex(0xffaa55);
+                    INTERSECTED.receiveShadow = false;
+                }
+            } else {
+                if (INTERSECTED) {
+                    INTERSECTED.receiveShadow = true;
+                    INTERSECTED.material.color.setHex(INTERSECTED.currentHex);
+                }
+                INTERSECTED = null;
             }
         }
     }
+}
+
+function findIntersections() {
+    var vector = new THREE.Vector3(mouse.x, mouse.y, 1);
+    projector.unprojectVector(vector, camera);
+    var ray = new THREE.Ray(camera.position, vector.subSelf(camera.position).normalize());
+    return ray.intersectScene(scene);
 }
 
 function onWindowResize(event) {
