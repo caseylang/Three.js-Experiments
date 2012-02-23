@@ -4,7 +4,6 @@
     <script src="/bundles/Three/lib/three.js/build/Three.js" type="text/javascript"></script>
     <script src="/bundles/Three/lib/three.js/examples/js/Detector.js"></script>
     <script src="/bundles/Three/lib/three.js/examples/js/Stats.js"></script>
-    <script src="/bundles/Three/lib/three.js/examples/js/Tween.js"></script>
     <style type="text/css">
         body {
             margin: 0px;
@@ -18,16 +17,6 @@
             background-color: #000;
             overflow: hidden;
         }
-
-        #container {
-            position: absolute;
-            left: 0px;
-            top: 0px;
-            width: 100%;
-            height: 100%;
-            margin: 0px;
-            padding: 0px;
-        }
     </style>
 </head>
 
@@ -39,15 +28,17 @@ var clock = new THREE.Clock();
 var SCREEN_HEIGHT = window.innerHeight;
 var SCREEN_WIDTH = window.innerWidth;
 var container, stats;
-var camera, scene, renderer, mesh, light, ambientLight, dynamicHeight;
+var camera, scene, renderer, mesh, light, ambientLight;
 var grid = [];
 var paused = false;
-var last = new Date().getTime();
 var down = false;
 var moved = false;
 var sx = 0, sy = 0;
 var rot = Math.PI / 3;
 var max = 0;
+var running = 0;
+var dynamicHeight = {y:1};
+
 
 THREE.LeftAlign = 1;
 THREE.CenterAlign = 0;
@@ -136,15 +127,11 @@ function init() {
         barGraph.add(title);
     }
 
-    //Init the bouncy!
-    TWEEN.removeAll();
-    dynamicHeight = {y:1};
     //Draws the bars
     for (var j = 0; j < grid.length; j++) {
         var array = grid[j];
         for (var i = 0; i < array.length; i++) {
             var mat = new THREE.MeshPhongMaterial({color:0xFFAA55});
-            //var barHeight = array[i].height / max * 80;
             mat.color.setHSV(0.2 + 0.8 * array[i].height / max, 0.8, 1);
             var geo = new THREE.CubeGeometry(8, 2, 8);
             var mesh = new THREE.Mesh(geo, mat);
@@ -154,15 +141,8 @@ function init() {
             mesh.castShadow = mesh.receiveShadow = true;
             barGraph.add(mesh);
             grid[j][i].bar = mesh;
-
-            var title = alignPlane(createText2D(array[i].height), THREE.CenterAlign, THREE.CenterAlign);
-            title.scale.set(0.25, 0.25, 0.25);
-            title.position.x = ((i - (array.length - 1) / 2) * 16) + 6;
-            title.position.y = 2 + 1 / 2;
-            title.position.z = -(j - (grid.length - 1) / 2) * 16;
-            title.rotation.x = -Math.PI / 2;
-            barGraph.add(title);
-            grid[j][i].title = title;
+            grid[j][i].done = false;
+            running++;
         }
     }
 
@@ -248,19 +228,23 @@ function animate() {
 
 function render(t) {
     if (!paused) {
-        last = t;
         renderer.clear();
         camera.lookAt(scene.position);
         renderer.render(scene, camera);
-        dynamicHeight.y += .5;
-        for (var j = 0; j < grid.length; j++) {
-            var array = grid[j];
-            for (var i = 0; i < array.length; i++) {
-                var barHeight = array[i].height / max * 80;
-                if (dynamicHeight.y < barHeight) {
-                    grid[j][i]['bar'].scale.y = dynamicHeight.y / 2;
-                    grid[j][i]['bar'].position.y = grid[j][i]['bar'].scale.y / 2;
-                    grid[j][i]['title'].position.y = (dynamicHeight.y) + 1 / 2.25;
+        //todo: Dear god man, make this better.
+        if (running != 0) {
+            dynamicHeight.y += .5;
+            for (var j = 0; j < grid.length; j++) {
+                var array = grid[j];
+                for (var i = 0; i < array.length; i++) {
+                    var barHeight = array[i].height / max * 80;
+                                        if (dynamicHeight.y < barHeight) {
+                        grid[j][i]['bar'].scale.y = dynamicHeight.y / 2;
+                        grid[j][i]['bar'].position.y = grid[j][i]['bar'].scale.y / 2;
+                    } else if (dynamicHeight.y > barHeight && !grid[j][i]['done']) {
+                        running--;
+                        grid[j][i]['done'] = true;
+                    }
                 }
             }
         }
