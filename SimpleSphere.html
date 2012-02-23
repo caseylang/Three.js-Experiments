@@ -1,0 +1,93 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>Simple Sphere</title>
+    <script src="/bundles/Three/Three-min.js" type="text/javascript"></script>
+</head>
+<body>
+<script>
+
+    var camera, scene, renderer,
+            geometry, material, mesh;
+    var startTime = Date.now();
+
+    init();
+    animate();
+
+    function init() {
+
+        scene = new THREE.Scene();
+
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
+        camera.position.z = 1000;
+        scene.add(camera);
+
+        // create the sphere's material
+        var sphereMaterial = new THREE.MeshLambertMaterial(
+        {
+            color: 0x3875d7, wireframe: true
+        });
+
+        // set up the sphere vars
+        var radius = 500,
+            segments = 200,
+            rings = 200;
+
+
+        // create a new mesh with sphere geometry -
+        // we will cover the sphereMaterial next!
+        sphere = new THREE.Mesh(
+           new THREE.SphereGeometry(radius, segments, rings),
+           sphereMaterial);
+
+        // add the sphere to the scene
+        scene.add(sphere);
+
+        // create a point light
+        var pointLight =
+          new THREE.PointLight(0xFFFFFF);
+
+        // set its position
+        pointLight.position.x = 10;
+        pointLight.position.y = 50;
+        pointLight.position.z = 1000;
+
+        // add to the scene
+        scene.add(pointLight);
+
+        renderer = new THREE.WebGLRenderer({antialias: true});
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        document.body.appendChild(renderer.domElement);
+
+    }
+
+    function animate() {
+
+        // note: three.js includes requestAnimationFrame shim
+        requestAnimationFrame(animate);
+        render();
+
+    }
+
+    function render() {
+        sphere.rotation.x += 0.006;
+        sphere.rotation.y += 0.00525;
+        sphere.rotation.z += 0.00475;
+
+        var dtime = Date.now() - startTime;
+        sphere.scale.x = 1.0 + 0.1 * Math.sin(dtime / 300);
+        sphere.scale.y = 1.0 + 0.1 * Math.sin(dtime / 300);
+        sphere.scale.z = 1.0 + 0.1 * Math.sin(dtime / 300);
+
+        renderer.setClearColorHex(0xEEEEEE, 1.0);
+        renderer.clear();
+
+        renderer.render(scene, camera);
+
+    }
+
+</script>
+</body>
+</html>

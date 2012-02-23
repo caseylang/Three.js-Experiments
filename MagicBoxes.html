@@ -1,0 +1,143 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>Magic Boxes</title>
+    <script src="/bundles/Three/Three-min.js" type="text/javascript"></script>
+</head>
+<body>
+<script>
+    //bootstrap functions
+    //initialiaze everything
+    var startTime = Date.now();
+    var container;
+    var camera, scene, renderer;
+    var cube;
+
+    init();
+
+    //make it move
+    animate();
+
+    //Initialize everything
+    function init() {
+
+        //create the Scene
+        scene = new THREE.Scene();
+
+        //create the camera
+        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 10000);
+        camera.position.z = -400;
+        camera.position.x = 200;
+        camera.position.y = 350;
+        scene.add(camera);
+
+        //create lighting
+        var light = new THREE.SpotLight();
+        light.position.set( 170, 330, -160);
+        // enable shadows for a light
+        light.castShadow = true;
+        scene.add(light);
+
+        //create the Cube and add it to the scene
+        cube = new THREE.Mesh(
+                new THREE.CubeGeometry(50, 50, 50),
+                new THREE.MeshPhongMaterial({color: 0xFF0000}));
+        cube.castShadow = true;
+        cube.receiveShadow = true;
+        scene.add(cube);
+
+        //create a lit cube and add it to the scene
+        litCube = new THREE.Mesh(
+                new THREE.CubeGeometry(50, 50, 50),
+                new THREE.MeshLambertMaterial({color: 0xFFFFFF}));
+        litCube.position.y = 50;
+        // enable shadows for an object
+        litCube.castShadow = true;
+        litCube.receiveShadow = true;
+        scene.add(litCube);
+
+        //add plane
+        var planeGeo = new THREE.PlaneGeometry(400, 200, 10, 10);
+        var planeMat = new THREE.MeshPhongMaterial({color: 0xFFFFFF});
+        var plane = new THREE.Mesh(planeGeo, planeMat);
+        plane.rotation.x = -Math.PI/2;
+        plane.position.y = -25;
+        plane.receiveShadow = true;
+        scene.add(plane);
+
+        //create the container element
+        container = document.createElement('div');
+        document.body.appendChild(container);
+
+        //init the WebGL renderer and append it to the Dom
+        renderer = new THREE.WebGLRenderer({antialias: true});
+        renderer.setSize(window.innerWidth-16, window.innerHeight-16);
+        renderer.setClearColorHex(0xEEEEEE, 1.0);
+        // enable shadows on the renderer
+        renderer.shadowMapEnabled = true;
+        renderer.shadowCameraFov = 50;
+        renderer.shadowMapWidth = 1024;;
+        renderer.shadowMapHeight = 1024;
+        container.appendChild(renderer.domElement);
+    }
+
+    //Animate and Display the Scene
+    function animate() {
+        if (!paused) {
+            //render the 3D scene
+            render(new Date().getTime());
+        }
+
+        //relaunch the 'timer'
+        requestAnimationFrame(animate);
+    }
+
+    //Render the 3D Scene
+    function render(dtime) {
+        //animate by rotating the camera
+        /*camera.position.x = Math.sin(dtime/1000)*300;
+        camera.position.y = 150;
+        camera.position.z = Math.cos(dtime/1000)*300;
+
+        //update the position of the camera every frame
+        camera.lookAt(scene.position);*/
+
+        litCube.position.x = Math.cos(dtime/600)*85;
+        litCube.position.y = 60-Math.sin(dtime/900)*25;
+        litCube.position.z = Math.sin(dtime/600)*85;
+        litCube.rotation.x = dtime/500;
+        litCube.rotation.y = dtime/800;
+
+        //actually display the scene in the Dom element
+        renderer.clear();
+        camera.lookAt(scene.position);
+        renderer.render(scene, camera);
+    }
+
+    //Enable camera controls with the mouse
+    onmessage = function(ev) {
+      paused = (ev.data == 'pause');
+    };
+
+    var paused = false;
+    var down = false;
+    var sx = 0, sy = 0;
+
+    window.onmousedown = function (ev){
+      down = true; sx = ev.clientX; sy = ev.clientY;
+    };
+    window.onmouseup = function(){ down = false; };
+    window.onmousemove = function(ev) {
+      if (down) {
+        var dx = ev.clientX - sx;
+        var dy = ev.clientY - sy;
+        camera.position.x += dx;
+        camera.position.y += dy;
+        sx += dx;
+        sy += dy;
+      }
+    }
+</script>
+</body>
+</html>

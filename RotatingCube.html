@@ -1,0 +1,97 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>Rotating Cube</title>
+    <script src="/bundles/Three/Three-min.js" type="text/javascript"></script>
+</head>
+<body>
+<script>
+    //bootstrap functions
+    //initialiaze everything
+
+    var startTime = Date.now();
+    var container;
+    var camera, scene, renderer;
+    var cube;
+
+
+    init();
+
+    //make it move
+
+    animate();
+
+    //Initialize everything
+
+    function init() {
+
+        //create the Scene
+
+        scene = new THREE.Scene();
+
+        //create the camera
+
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
+        camera.position.z = 1000;
+        scene.add(camera);
+
+
+//create the Cube
+
+        cube = new THREE.Mesh(new THREE.CubeGeometry(200, 200, 200), new THREE.MeshNormalMaterial());
+        cube.position.y = 150;
+
+//add the object to the scene
+
+        scene.add(cube);
+
+//create the container element
+
+        container = document.createElement('div');
+        document.body.appendChild(container);
+
+//init the WebGL renderer and append it to the Dom
+
+        renderer = new THREE.WebGLRenderer({antialias: true});
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        container.appendChild(renderer.domElement);
+    }
+
+    //Animate and Display the Scene
+
+    function animate() {
+
+//render the 3D scene
+
+        render();
+
+//relaunch the 'timer'
+
+        requestAnimationFrame(animate);
+    }
+
+    //Render the 3D Scene
+
+    function render() {
+
+//animate the cube
+
+        cube.rotation.x += 0.02;
+        cube.rotation.y += 0.0225;
+        cube.rotation.z += 0.0175;
+
+//make the cube bounce
+
+        var dtime = Date.now() - startTime;
+        cube.scale.x = 1.0 + 0.3 * Math.sin(dtime / 300);
+        cube.scale.y = 1.0 + 0.3 * Math.sin(dtime / 300);
+        cube.scale.z = 1.0 + 0.3 * Math.sin(dtime / 300);
+        renderer.setClearColorHex(0xEEEEEE, 1.0);
+        renderer.clear();
+//actually display the scene in the Dom element
+        renderer.render(scene, camera);
+    }
+</script>
+</body>
+</html>
