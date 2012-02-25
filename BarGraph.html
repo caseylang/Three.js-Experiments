@@ -1,11 +1,10 @@
 <html>
 <head>
-    <title>Can your excel do this?</title>
     <script src="/bundles/Three/lib/three.js/build/Three.js" type="text/javascript"></script>
+    <script src="/bundles/Three/lib/jquery-1.7.min.js" type="text/javascript"></script>
     <script src="/bundles/Three/lib/three.js/examples/js/Detector.js"></script>
     <script src="/bundles/Three/lib/three.js/examples/js/Stats.js"></script>
-    <script src="/bundles/Three/lib/three.js/examples/js/Tween.js"></script>
-    <script src="/bundles/Three/lib/jquery-1.7.min.js"></script>
+    <script src="/bundles/Three/lib/tween.js/build/Tween.js"></script>
     <style type="text/css">
         body {
             margin: 0px;
@@ -19,17 +18,35 @@
             background-color: #000;
             overflow: hidden;
         }
+
+        #info {
+            position: absolute;
+            top: 0px;
+            left: 0px;
+            width: 100px;
+            height: 30px;
+            color: #000;
+            background-color: #a9a9a9;
+            padding: 5px;
+            font-family: Monospace;
+            font-size: 13px;
+            z-index: 100;
+        }
     </style>
 </head>
 
 <body>
+<div id="info">Select a bar<br/>
+
+    <div id="barName" style="display: none">No bar selected</div>
+</div>
 <script>
 // <!--
 if (!Detector.webgl) Detector.addGetWebGLMessage();
 var clock = new THREE.Clock();
 var SCREEN_HEIGHT = window.innerHeight;
 var SCREEN_WIDTH = window.innerWidth;
-var container, stats;
+var stats, info = $('#barName');
 var camera, scene, projector, renderer, mesh, light, ambientLight, barGraph;
 var grid = [];
 var paused = false;
@@ -49,6 +66,7 @@ THREE.TopAlign = -1;
 THREE.BottomAlign = 1;
 
 init();
+TWEEN.start();
 animate();
 
 function init() {
@@ -97,8 +115,9 @@ function init() {
     barGraph = new THREE.Object3D();
     scene.add(barGraph);
 
-    dynamicHeight.y = 2;
+    dynamicHeight.y = 1;
     TWEEN.removeAll();
+    TWEEN.setAutostart(true);
     var length = {x:10, y:10};
     //todo: this is cheating. You'll need to find a max if you want to use real data.
     max = ((length.x - 1) * (length.y - 1)) + 5;
@@ -154,10 +173,10 @@ function drawBar(y, x, length, height) {
     var complete = partial(completeBar, running)
     grid[running].tween = new TWEEN.Tween(dynamicHeight)
             .to({y:(height / max * 80)}, 3500)
-            .easing(TWEEN.Easing.Exponential.EaseInOut)
+            .easing(TWEEN.Easing.Elastic.EaseOut)
             .onUpdate(update)
             .onComplete(complete)
-            .delay(1750)
+            .delay(1000)
             .start();
 }
 
@@ -242,6 +261,8 @@ document.onclick = function () {
                 INTERSECTED_CLICK = intersects[ 0 ].object;
                 INTERSECTED_CLICK.material.color.setHex(0xa854fe);
                 INTERSECTED.currentHex = 0xa854fe;
+                info.html('Bar #' + INTERSECTED_CLICK.name);
+                info.show();
             }
         }
     }

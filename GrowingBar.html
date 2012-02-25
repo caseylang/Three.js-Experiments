@@ -37,6 +37,8 @@
     var windowHalfX = window.innerWidth / 2;
     var windowHalfY = window.innerHeight / 2;
 
+    var geo;
+
     init();
     animate();
 
@@ -73,7 +75,7 @@
         var materials = [];
 
         for (var i = 0; i < 6; i++) {
-            materials.push(new THREE.MeshBasicMaterial({ color: Math.random() * 0xffffff }));
+            materials.push(new THREE.MeshBasicMaterial({ color:Math.random() * 0xffffff }));
         }
 
         cube = new THREE.Mesh(new THREE.CubeGeometry(200, cubeHeight, 200, 1, 1, 1, materials), new THREE.MeshFaceMaterial());
@@ -82,14 +84,17 @@
         cube.overdraw = true;
         scene.add(cube);
 
-        cubeScale = new THREE.Mesh(new THREE.CubeGeometry(200, 5, 200, 1, 1, 1, materials), new THREE.MeshFaceMaterial());
+        geo = new THREE.CubeGeometry(200, 5, 200, 1, 1, 1, materials);
+        geo.dynamic = true
+        geo.__dirtyVertices = true;
+        cubeScale = new THREE.Mesh(geo, new THREE.MeshFaceMaterial());
         cubeScale.position.x = 150;
         cubeScale.position.y = 5 / 2;
         cubeScale.overdraw = true;
         scene.add(cubeScale);
 
         // Plane
-        plane = new THREE.Mesh(new THREE.PlaneGeometry(800, 700), new THREE.MeshBasicMaterial({ color: 0x545454 }));
+        plane = new THREE.Mesh(new THREE.PlaneGeometry(800, 700), new THREE.MeshBasicMaterial({ color:0x545454 }));
         plane.rotation.x = -90 * ( Math.PI / 180 );
         plane.position.y = -10;
         plane.overdraw = true;
@@ -106,24 +111,26 @@
         container.appendChild(stats.domElement);
 
         TWEEN.removeAll();
-        cubeHeightDynamic = {y: 1}
+        cubeHeightDynamic = {y:1}
         tween = new TWEEN.Tween(cubeHeightDynamic).to({
-            y: cubeHeight}, 2000)
-                .easing(TWEEN.Easing.Elastic.EaseOut).start();
-
+            y:cubeHeight}, 2000)
+                .easing(TWEEN.Easing.Elastic.EaseOut);
+        TWEEN.start();
         document.addEventListener('mousedown', onDocumentMouseDown, false);
         document.addEventListener('touchstart', onDocumentTouchStart, false);
         document.addEventListener('touchmove', onDocumentTouchMove, false);
     }
 
-    tween.onUpdate(function(){
-        cubeScale.scale.y = cubeHeightDynamic.y / 5;
+    tween.onUpdate(function () {
+        geo.vertices[0].position.y = cubeHeightDynamic.y;
+        geo.vertices[1].position.y = cubeHeightDynamic.y;
+        geo.vertices[4].position.y = cubeHeightDynamic.y;
+        geo.vertices[5].position.y = cubeHeightDynamic.y;
         count.innerHTML = cubeHeightDynamic.y;
         container.appendChild(count);
-        cubeScale.position.y = cubeHeightDynamic.y / 2;
     });
 
-    tween.onComplete(function() {
+    tween.onComplete(function () {
 
     });
 
