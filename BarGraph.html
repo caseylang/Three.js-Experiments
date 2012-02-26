@@ -51,7 +51,6 @@ var camera, scene, projector, renderer, mesh, light, ambientLight, barGraph;
 var grid = [];
 var paused = false;
 var down = false;
-var moved = false;
 var sx = 0, sy = 0;
 var rot = Math.PI / 3;
 var max = 0;
@@ -76,7 +75,7 @@ function init() {
 
     stats = new Stats();
     stats.domElement.style.position = 'absolute';
-    stats.domElement.style.top = '0px';
+    stats.domElement.style.top = '40px';
     document.body.appendChild(stats.domElement);
 
     renderer.setClearColorHex(0xEEEEEE, 1.0);
@@ -250,27 +249,24 @@ function onDocumentMouseMove(event) {
     mouse.y = -( event.clientY / window.innerHeight ) * 2 + 1;
 }
 
-document.onclick = function () {
-    if (!moved) {
-        var intersects = findIntersections();
-        if (intersects.length > 0) {
-            if (INTERSECTED_CLICK != intersects[ 0 ].object && intersects[ 0 ].object.name != 'Plane') {
-                if (INTERSECTED_CLICK) {
-                    INTERSECTED_CLICK.material.color.setHex(grid[INTERSECTED_CLICK.name].baseColor);
-                }
-                INTERSECTED_CLICK = intersects[ 0 ].object;
-                INTERSECTED_CLICK.material.color.setHex(0xa854fe);
-                INTERSECTED.currentHex = 0xa854fe;
-                info.html('Bar #' + INTERSECTED_CLICK.name);
-                info.show();
+document.ondblclick = function () {
+    var intersects = findIntersections();
+    if (intersects.length > 0) {
+        if (INTERSECTED_CLICK != intersects[ 0 ].object && intersects[ 0 ].object.name != 'Plane') {
+            if (INTERSECTED_CLICK) {
+                INTERSECTED_CLICK.material.color.setHex(grid[INTERSECTED_CLICK.name].baseColor);
             }
+            INTERSECTED_CLICK = intersects[ 0 ].object;
+            INTERSECTED_CLICK.material.color.setHex(0xa854fe);
+            INTERSECTED.currentHex = 0xa854fe;
+            info.html('Bar #' + INTERSECTED_CLICK.name);
+            info.show();
         }
     }
 }
 
 window.onmousedown = function (ev) {
     down = true;
-    moved = false;
     sx = ev.clientX;
     sy = ev.clientY;
 };
@@ -280,7 +276,6 @@ window.onmouseup = function () {
 };
 
 window.onmousemove = function (ev) {
-    moved = true;
     if (down) {
         var dx = ev.clientX - sx;
         var dy = ev.clientY - sy;
@@ -306,7 +301,7 @@ function render(t) {
         renderer.render(scene, camera);
 
         TWEEN.update();
-        if (running <= 0 && !down) {
+        if (!down) {
             var intersects = findIntersections();
             if (intersects.length > 0) {
                 if (INTERSECTED != intersects[ 0 ].object && intersects[ 0 ].object.name != 'Plane') {
