@@ -26,7 +26,7 @@
     var count;
     var camera, scene, renderer;
 
-    var cube, cubeScale, plane, cubeHeight, cubeHeightDynamic, tween;
+    var cube, cubeScale, plane, cubeHeight, cubeHeightDynamic, tween, parent;
 
     var targetRotation = 0;
     var targetRotationOnMouseDown = 0;
@@ -71,9 +71,11 @@
         camera.position.z = 1000;
         scene.add(camera);
 
+        parent = new THREE.Object3D();
+        scene.add(parent);
+
         // Cube
         var materials = [];
-
         for (var i = 0; i < 6; i++) {
             materials.push(new THREE.MeshBasicMaterial({ color:Math.random() * 0xffffff }));
         }
@@ -81,26 +83,27 @@
         cube = new THREE.Mesh(new THREE.CubeGeometry(200, cubeHeight, 200, 1, 1, 1, materials), new THREE.MeshFaceMaterial());
         cube.position.x = -150;
         cube.position.y = cubeHeight / 2;
-        cube.overdraw = true;
-        scene.add(cube);
+        parent.add(cube);
 
+        var materials = [];
+        for (var i = 0; i < 6; i++) {
+            materials.push(new THREE.MeshBasicMaterial({ color:Math.random() * 0xffffff }));
+        }
         geo = new THREE.CubeGeometry(200, 5, 200, 1, 1, 1, materials);
         geo.dynamic = true
         geo.__dirtyVertices = true;
         cubeScale = new THREE.Mesh(geo, new THREE.MeshFaceMaterial());
         cubeScale.position.x = 150;
         cubeScale.position.y = 5 / 2;
-        cubeScale.overdraw = true;
-        scene.add(cubeScale);
+        parent.add(cubeScale);
 
         // Plane
-        plane = new THREE.Mesh(new THREE.PlaneGeometry(800, 700), new THREE.MeshBasicMaterial({ color:0x545454 }));
+        plane = new THREE.Mesh(new THREE.PlaneGeometry(8000, 7000), new THREE.MeshBasicMaterial({ color:0x545454 }));
         plane.rotation.x = -90 * ( Math.PI / 180 );
         plane.position.y = -10;
-        plane.overdraw = true;
-        scene.add(plane);
+        parent.add(plane);
 
-        renderer = new THREE.CanvasRenderer();
+        renderer = new THREE.WebGLRenderer({antialias:true});
         renderer.setSize(window.innerWidth, window.innerHeight);
 
         container.appendChild(renderer.domElement);
@@ -111,17 +114,18 @@
         container.appendChild(stats.domElement);
 
         TWEEN.removeAll();
+        TWEEN.setAutostart(true);
         cubeHeightDynamic = {y:1}
         tween = new TWEEN.Tween(cubeHeightDynamic).to({
             y:cubeHeight}, 2000)
-                .easing(TWEEN.Easing.Elastic.EaseOut);
-        TWEEN.start();
+                .easing(TWEEN.Easing.Elastic.EaseOut).start();
         document.addEventListener('mousedown', onDocumentMouseDown, false);
         document.addEventListener('touchstart', onDocumentTouchStart, false);
         document.addEventListener('touchmove', onDocumentTouchMove, false);
     }
 
     tween.onUpdate(function () {
+        geo.__dirtyVertices = true;
         geo.vertices[0].position.y = cubeHeightDynamic.y;
         geo.vertices[1].position.y = cubeHeightDynamic.y;
         geo.vertices[4].position.y = cubeHeightDynamic.y;
@@ -131,7 +135,7 @@
     });
 
     tween.onComplete(function () {
-
+        geo.computeBoundingSphere();
     });
 
     function onDocumentMouseDown(event) {
@@ -181,8 +185,6 @@
         }
     }
 
-    //
-
     function animate() {
         requestAnimationFrame(animate);
         render();
@@ -191,7 +193,7 @@
 
     function render() {
         TWEEN.update()
-        plane.rotation.z = cube.rotation.y = cubeScale.rotation.y += ( targetRotation - cube.rotation.y ) * 0.05;
+        parent.rotation.y += ( targetRotation - parent.rotation.y ) * 0.05;
         renderer.render(scene, camera);
     }
 

@@ -1,15 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PerforceDirect.Settings">
-    <option name="useP4CONFIG" value="false" />
-    <option name="port" value="localhost:1666" />
-    <option name="user" value="casey_lang" />
-    <option name="passwd" value="dff9dfdfdfdadfcfdfd8dffadfcbdfd9dfd9dfdddf9adfd8dfcedf8b" />
-    <option name="pathToExec" value="/usr/bin/p4" />
-    <option name="PATH_TO_P4V" value="/Applications/p4v.app/Contents/MacOS/p4v" />
-    <option name="USE_LOGIN" value="true" />
-    <option name="LOGIN_SILENTLY" value="true" />
-  </component>
   <component name="ProjectResources">
     <default-html-doctype>http://www.w3.org/1999/xhtml</default-html-doctype>
   </component>
