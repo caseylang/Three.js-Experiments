@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>A growing bar</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <style>
+        body {
+            font-family: Monospace;
+            background-color: #f0f0f0;
+            margin: 0px;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+
+<script src="lib/three.js/build/Three.js" type="text/javascript"></script>
+<script src="lib/three.js/examples/js/Detector.js"></script>
+<script src="lib/three.js/examples/js/Stats.js"></script>
+<script src="lib/three.js/examples/js/Tween.js"></script>
+
+<script>
+
+    var container, stats;
+    var count;
+    var camera, scene, renderer;
+
+    var cube, cubeScale, plane, cubeHeight, cubeHeightDynamic, tween;
+
+    var targetRotation = 0;
+    var targetRotationOnMouseDown = 0;
+
+    var mouseX = 0;
+    var mouseXOnMouseDown = 0;
+
+    var windowHalfX = window.innerWidth / 2;
+    var windowHalfY = window.innerHeight / 2;
+
+    var geo;
+
+    init();
+    animate();
+
+    function init() {
+
+        container = document.createElement('div');
+        document.body.appendChild(container);
+        cubeHeight = 50 + Math.floor(Math.random() * 750);
+
+        var info = document.createElement('div');
+        info.style.position = 'absolute';
+        info.style.top = '10px';
+        info.style.width = '100%';
+        info.style.textAlign = 'center';
+        info.innerHTML = 'Drag to spin the cube. Bar Height = ' + cubeHeight;
+        container.appendChild(info);
+
+        count = document.createElement('div');
+        count.style.position = 'absolute';
+        count.style.top = '25px';
+        count.style.width = '100%';
+        count.style.textAlign = 'center';
+        count.innerHTML = cubeHeight;
+        container.appendChild(count);
+
+        scene = new THREE.Scene();
+
+        camera = new THREE.PerspectiveCamera(80, window.innerWidth / window.innerHeight, 1, 10000);
+        camera.position.y = 500;
+        camera.position.z = 1000;
+        scene.add(camera);
+
+        // Cube
+        var materials = [];
+
+        for (var i = 0; i < 6; i++) {
+            materials.push(new THREE.MeshBasicMaterial({ color:Math.random() * 0xffffff }));
+        }
+
+        cube = new THREE.Mesh(new THREE.CubeGeometry(200, cubeHeight, 200, 1, 1, 1, materials), new THREE.MeshFaceMaterial());
+        cube.position.x = -150;
+        cube.position.y = cubeHeight / 2;
+        cube.overdraw = true;
+        scene.add(cube);
+
+        geo = new THREE.CubeGeometry(200, 5, 200, 1, 1, 1, materials);
+        geo.dynamic = true
+        geo.__dirtyVertices = true;
+        cubeScale = new THREE.Mesh(geo, new THREE.MeshFaceMaterial());
+        cubeScale.position.x = 150;
+        cubeScale.position.y = 5 / 2;
+        cubeScale.overdraw = true;
+        scene.add(cubeScale);
+
+        // Plane
+        plane = new THREE.Mesh(new THREE.PlaneGeometry(800, 700), new THREE.MeshBasicMaterial({ color:0x545454 }));
+        plane.rotation.x = -90 * ( Math.PI / 180 );
+        plane.position.y = -10;
+        plane.overdraw = true;
+        scene.add(plane);
+
+        renderer = new THREE.CanvasRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        container.appendChild(renderer.domElement);
+
+        stats = new Stats();
+        stats.domElement.style.position = 'absolute';
+        stats.domElement.style.top = '0px';
+        container.appendChild(stats.domElement);
+
+        TWEEN.removeAll();
+        cubeHeightDynamic = {y:1}
+        tween = new TWEEN.Tween(cubeHeightDynamic).to({
+            y:cubeHeight}, 2000)
+                .easing(TWEEN.Easing.Elastic.EaseOut);
+        TWEEN.start();
+        document.addEventListener('mousedown', onDocumentMouseDown, false);
+        document.addEventListener('touchstart', onDocumentTouchStart, false);
+        document.addEventListener('touchmove', onDocumentTouchMove, false);
+    }
+
+    tween.onUpdate(function () {
+        geo.vertices[0].position.y = cubeHeightDynamic.y;
+        geo.vertices[1].position.y = cubeHeightDynamic.y;
+        geo.vertices[4].position.y = cubeHeightDynamic.y;
+        geo.vertices[5].position.y = cubeHeightDynamic.y;
+        count.innerHTML = cubeHeightDynamic.y;
+        container.appendChild(count);
+    });
+
+    tween.onComplete(function () {
+
+    });
+
+    function onDocumentMouseDown(event) {
+        event.preventDefault();
+
+        document.addEventListener('mousemove', onDocumentMouseMove, false);
+        document.addEventListener('mouseup', onDocumentMouseUp, false);
+        document.addEventListener('mouseout', onDocumentMouseOut, false);
+
+        mouseXOnMouseDown = event.clientX - windowHalfX;
+        targetRotationOnMouseDown = targetRotation;
+    }
+
+    function onDocumentMouseMove(event) {
+        mouseX = event.clientX - windowHalfX;
+
+        targetRotation = targetRotationOnMouseDown + ( mouseX - mouseXOnMouseDown ) * 0.02;
+    }
+
+    function onDocumentMouseUp(event) {
+        document.removeEventListener('mousemove', onDocumentMouseMove, false);
+        document.removeEventListener('mouseup', onDocumentMouseUp, false);
+        document.removeEventListener('mouseout', onDocumentMouseOut, false);
+    }
+
+    function onDocumentMouseOut(event) {
+        document.removeEventListener('mousemove', onDocumentMouseMove, false);
+        document.removeEventListener('mouseup', onDocumentMouseUp, false);
+        document.removeEventListener('mouseout', onDocumentMouseOut, false);
+    }
+
+    function onDocumentTouchStart(event) {
+        if (event.touches.length == 1) {
+            event.preventDefault();
+
+            mouseXOnMouseDown = event.touches[ 0 ].pageX - windowHalfX;
+            targetRotationOnMouseDown = targetRotation;
+        }
+    }
+
+    function onDocumentTouchMove(event) {
+        if (event.touches.length == 1) {
+            event.preventDefault();
+
+            mouseX = event.touches[ 0 ].pageX - windowHalfX;
+            targetRotation = targetRotationOnMouseDown + ( mouseX - mouseXOnMouseDown ) * 0.05;
+        }
+    }
+
+    //
+
+    function animate() {
+        requestAnimationFrame(animate);
+        render();
+        stats.update();
+    }
+
+    function render() {
+        TWEEN.update()
+        plane.rotation.z = cube.rotation.y = cubeScale.rotation.y += ( targetRotation - cube.rotation.y ) * 0.05;
+        renderer.render(scene, camera);
+    }
+
+</script>
+
+</body>
+</html>

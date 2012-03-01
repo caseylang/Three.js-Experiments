@@ -1,0 +1,59 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>Simple Rotating Box</title>
+    <script src="lib/three.js/build/Three.js" type="text/javascript"></script>
+</head>
+<body>
+<script>
+
+    var camera, scene, renderer,
+            geometry, material, mesh;
+
+    init();
+    animate();
+
+    function init() {
+
+        scene = new THREE.Scene();
+
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
+        camera.position.z = 1000;
+        scene.add(camera);
+
+        var side = 400;
+        geometry = new THREE.CubeGeometry(side, side, side);
+        material = new THREE.MeshNormalMaterial();
+
+        mesh = new THREE.Mesh(geometry, material);
+        scene.add(mesh);
+
+        renderer = new THREE.CanvasRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        document.body.appendChild(renderer.domElement);
+
+    }
+
+    function animate() {
+
+        // note: three.js includes requestAnimationFrame shim
+        requestAnimationFrame(animate);
+        render();
+
+    }
+
+    function render() {
+
+        mesh.rotation.x += 0.006;
+        mesh.rotation.y += 0.00525;
+        mesh.rotation.z += 0.00475;
+
+        renderer.render(scene, camera);
+
+    }
+
+</script>
+</body>
+</html>
