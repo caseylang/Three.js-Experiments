@@ -295,29 +295,27 @@ function animate() {
 }
 
 function render(t) {
-    if (!paused) {
-        renderer.clear();
-        camera.lookAt(scene.position);
-        renderer.render(scene, camera);
+    renderer.clear();
+    camera.lookAt(scene.position);
+    renderer.render(scene, camera);
 
-        TWEEN.update();
-        if (!down) {
-            var intersects = findIntersections();
-            if (intersects.length > 0) {
-                if (INTERSECTED != intersects[ 0 ].object && intersects[ 0 ].object.name != 'Plane') {
-                    if (INTERSECTED) {
-                        INTERSECTED.material.color.setHex(INTERSECTED.currentHex);
-                    }
-                    INTERSECTED = intersects[ 0 ].object;
-                    INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
-                    INTERSECTED.material.color.setHex(0xffaa55);
-                }
-            } else {
+    TWEEN.update();
+    if (!down) {
+        var intersects = findIntersections();
+        if (intersects.length > 0) {
+            if (INTERSECTED != intersects[ 0 ].object && intersects[ 0 ].object.name != 'Plane') {
                 if (INTERSECTED) {
                     INTERSECTED.material.color.setHex(INTERSECTED.currentHex);
                 }
-                INTERSECTED = null;
+                INTERSECTED = intersects[ 0 ].object;
+                INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
+                INTERSECTED.material.color.setHex(0xffaa55);
             }
+        } else {
+            if (INTERSECTED) {
+                INTERSECTED.material.color.setHex(INTERSECTED.currentHex);
+            }
+            INTERSECTED = null;
         }
     }
 }
@@ -337,10 +335,6 @@ function onWindowResize(event) {
 
     camera.lookAt(scene.position);
 }
-
-onmessage = function (ev) {
-    paused = (ev.data == 'pause');
-};
 
 function partial(func /*, 0..n args */) {
     var args = Array.prototype.slice.call(arguments, 1);

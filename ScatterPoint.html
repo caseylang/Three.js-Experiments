@@ -291,82 +291,80 @@ function animate() {
 
 var j, i, jl, cm, data, vertices, vertices_tmp, vl, d, vt, delta;
 function render() {
-    if (!paused) {
-        renderer.clear();
-        delta = 10 * clock.getDelta();
-        delta = delta < 2 ? delta : 2;
+    renderer.clear();
+    delta = 10 * clock.getDelta();
+    delta = delta < 2 ? delta : 2;
 
-        for (j = 0, jl = meshes.length; j < jl; j++) {
-            data = meshes[ j ];
-            mesh = data.mesh;
-            vertices = data.vertices;
-            vertices_tmp = data.vertices_tmp;
-            vl = data.vl;
+    for (j = 0, jl = meshes.length; j < jl; j++) {
+        data = meshes[ j ];
+        mesh = data.mesh;
+        vertices = data.vertices;
+        vertices_tmp = data.vertices_tmp;
+        vl = data.vl;
 
-            if (!data.dynamic) continue;
+        if (!data.dynamic) continue;
 
-            for (i = 0; i < vl; i++) {
-                p = vertices[ i ].position;
-                vt = vertices_tmp[ i ];
+        for (i = 0; i < vl; i++) {
+            p = vertices[ i ].position;
+            vt = vertices_tmp[ i ];
 
-                // falling down
-                if (data.direction < 0 && data.started) {
-                    if (p.y > -50) {
-                        p.x += 1.5 * ( 0.50 - Math.random() ) * data.speed.down * delta;
-                        p.y += 3.0 * ( 0.25 - Math.random() ) * data.speed.down * delta;
-                        p.z += 1.5 * ( 0.50 - Math.random() ) * data.speed.down * delta;
-                    } else {
-                        if (!vt[ 3 ]) {
-                            vt[ 3 ] = 1;
-                            data.down += 1;
-                        }
-                    }
-                }
-
-                // rising up
-                if (data.direction > 0 && data.started) {
-                    d = Math.abs(p.x - vt[ 0 ]) + Math.abs(p.y - vt[ 1 ]) + Math.abs(p.z - vt[ 2 ]);
-
-                    if (d > 1) {
-                        p.x += -( p.x - vt[ 0 ] ) / d * data.speed.up * delta * ( 0.85 - Math.random() );
-                        p.y += -( p.y - vt[ 1 ] ) / d * data.speed.up * delta * ( 1 + Math.random() );
-                        p.z += -( p.z - vt[ 2 ] ) / d * data.speed.up * delta * ( 0.85 - Math.random() );
-                    } else {
-                        if (!vt[ 4 ]) {
-                            vt[ 4 ] = 1;
-                            data.up += 1;
-                        }
+            // falling down
+            if (data.direction < 0 && data.started) {
+                if (p.y > -50) {
+                    p.x += 1.5 * ( 0.50 - Math.random() ) * data.speed.down * delta;
+                    p.y += 3.0 * ( 0.25 - Math.random() ) * data.speed.down * delta;
+                    p.z += 1.5 * ( 0.50 - Math.random() ) * data.speed.down * delta;
+                } else {
+                    if (!vt[ 3 ]) {
+                        vt[ 3 ] = 1;
+                        data.down += 1;
                     }
                 }
             }
 
-            // all down
-            if (data.down === vl) {
-                data.direction = 1;
-                data.down = 0;
-                data.started = false;
+            // rising up
+            if (data.direction > 0 && data.started) {
+                d = Math.abs(p.x - vt[ 0 ]) + Math.abs(p.y - vt[ 1 ]) + Math.abs(p.z - vt[ 2 ]);
 
-                for (i = 0; i < vl; i++) {
-                    vertices_tmp[ i ][ 3 ] = 0;
+                if (d > 1) {
+                    p.x += -( p.x - vt[ 0 ] ) / d * data.speed.up * delta * ( 0.85 - Math.random() );
+                    p.y += -( p.y - vt[ 1 ] ) / d * data.speed.up * delta * ( 1 + Math.random() );
+                    p.z += -( p.z - vt[ 2 ] ) / d * data.speed.up * delta * ( 0.85 - Math.random() );
+                } else {
+                    if (!vt[ 4 ]) {
+                        vt[ 4 ] = 1;
+                        data.up += 1;
+                    }
                 }
             }
-
-            // all up
-            if (data.up === vl) {
-                data.direction = -1;
-                data.up = 0;
-                data.started = false;
-
-                for (i = 0; i < vl; i++) {
-                    vertices_tmp[ i ][ 4 ] = 0;
-                }
-            }
-            mesh.geometry.__dirtyVertices = true;
         }
 
-        camera.lookAt(scene.position);
-        renderer.render(scene, camera);
+        // all down
+        if (data.down === vl) {
+            data.direction = 1;
+            data.down = 0;
+            data.started = false;
+
+            for (i = 0; i < vl; i++) {
+                vertices_tmp[ i ][ 3 ] = 0;
+            }
+        }
+
+        // all up
+        if (data.up === vl) {
+            data.direction = -1;
+            data.up = 0;
+            data.started = false;
+
+            for (i = 0; i < vl; i++) {
+                vertices_tmp[ i ][ 4 ] = 0;
+            }
+        }
+        mesh.geometry.__dirtyVertices = true;
     }
+
+    camera.lookAt(scene.position);
+    renderer.render(scene, camera);
 }
 
 function onWindowResize(event) {
@@ -377,10 +375,6 @@ function onWindowResize(event) {
 
     camera.lookAt(scene.position);
 }
-
-onmessage = function (ev) {
-    paused = (ev.data == 'pause');
-};
 
 function partial(func /*, 0..n args */) {
     var args = Array.prototype.slice.call(arguments, 1);
