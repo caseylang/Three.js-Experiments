@@ -116,7 +116,7 @@ function init() {
 
     dynamicHeight.y = 1;
     TWEEN.removeAll();
-    TWEEN.setAutostart(true);
+
     var length = {x:10, y:10};
     //todo: this is cheating. You'll need to find a max if you want to use real data.
     max = ((length.x - 1) * (length.y - 1)) + 5;
@@ -295,27 +295,29 @@ function animate() {
 }
 
 function render(t) {
-    renderer.clear();
-    camera.lookAt(scene.position);
-    renderer.render(scene, camera);
+    if (!paused) {
+        renderer.clear();
+        camera.lookAt(scene.position);
+        renderer.render(scene, camera);
 
-    TWEEN.update();
-    if (!down) {
-        var intersects = findIntersections();
-        if (intersects.length > 0) {
-            if (INTERSECTED != intersects[ 0 ].object && intersects[ 0 ].object.name != 'Plane') {
+        TWEEN.update();
+        if (!down) {
+            var intersects = findIntersections();
+            if (intersects.length > 0) {
+                if (INTERSECTED != intersects[ 0 ].object && intersects[ 0 ].object.name != 'Plane') {
+                    if (INTERSECTED) {
+                        INTERSECTED.material.color.setHex(INTERSECTED.currentHex);
+                    }
+                    INTERSECTED = intersects[ 0 ].object;
+                    INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
+                    INTERSECTED.material.color.setHex(0xffaa55);
+                }
+            } else {
                 if (INTERSECTED) {
                     INTERSECTED.material.color.setHex(INTERSECTED.currentHex);
                 }
-                INTERSECTED = intersects[ 0 ].object;
-                INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
-                INTERSECTED.material.color.setHex(0xffaa55);
+                INTERSECTED = null;
             }
-        } else {
-            if (INTERSECTED) {
-                INTERSECTED.material.color.setHex(INTERSECTED.currentHex);
-            }
-            INTERSECTED = null;
         }
     }
 }
@@ -335,6 +337,10 @@ function onWindowResize(event) {
 
     camera.lookAt(scene.position);
 }
+
+onmessage = function (ev) {
+    paused = (ev.data == 'pause');
+};
 
 function partial(func /*, 0..n args */) {
     var args = Array.prototype.slice.call(arguments, 1);
