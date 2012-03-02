@@ -77,7 +77,7 @@ function init() {
     stats.domElement.style.top = '110px';
     document.body.appendChild(stats.domElement);
 
-    renderer.setClearColorHex(0xEEEEEE, 1.0);
+    renderer.setClearColor(new THREE.Color(0, 1));
 
     scene = new THREE.Scene();
 
@@ -131,7 +131,7 @@ function init() {
             v(0, 50, -50), v(0, 50, 50),
             v(0, -50, -50), v(0, -50, 50)
     );
-    var lineMat = new THREE.LineBasicMaterial({color:0x808080, lineWidth:1});
+    var lineMat = new THREE.LineBasicMaterial({color:0x808080, lineWidth:1, opacity:.5});
     var line = new THREE.Line(lineGeo, lineMat);
     line.type = THREE.Lines;
     scatterPlot.add(line);
@@ -165,9 +165,9 @@ function init() {
     var pointGeo = [];
     for (var x = 0; x < groups; x++) pointGeo[x] = new THREE.Geometry();
 
-    sprite = THREE.ImageUtils.loadTexture("lib/images/particle.png");
+    sprite = THREE.ImageUtils.loadTexture("lib/images/particle_alpha_blending.png");
 
-    var color = [0xff0000, 0x00FF00, 0x0000FF, 0xFF00FF]
+    var color = [0xff0000, 0x00FF00, 0x007FFF, 0xFF00FF]
     var group = -1;
     for (var i = 0; i < pointCount; i++) {
         var index = i % groups;
@@ -195,7 +195,6 @@ function createMesh(originalGeometry, scene, color) {
 
     var geometry = new THREE.Geometry();
     var vertices_tmp = [];
-    var colors = [];
     for (i = 0; i < vl; i++) {
         p = vertices[ i ].position;
 
@@ -203,8 +202,15 @@ function createMesh(originalGeometry, scene, color) {
         vertices_tmp[ i ] = [ p.x, p.y, p.z, 0, 0 ];
     }
 
-    var material = new THREE.ParticleBasicMaterial({ size:1.5, map:sprite, color:color });
+    var material = new THREE.ParticleBasicMaterial({
+        size:2.5,
+        map:sprite,
+        color:color,
+        blending:THREE.AdditiveBlending,
+        transparent:true});
     mesh = new THREE.ParticleSystem(geometry, material);
+    mesh.sortParticles = true;
+
     scatterPlot.add(mesh);
 
     meshes.push({
@@ -232,7 +238,7 @@ function createTextCanvas(text, color, font, size) {
     canvas.width = w;
     canvas.height = h;
     ctx.font = fontStr;
-    ctx.fillStyle = color || 'black';
+    ctx.fillStyle = color || 'grey';
     ctx.fillText(text, 0, Math.ceil(size * 0.8));
     return canvas;
 }
