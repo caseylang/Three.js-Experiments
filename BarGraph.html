@@ -289,9 +289,9 @@ window.onmousemove = function (ev) {
 }
 
 function animate() {
+    window.requestAnimationFrame(animate, renderer.domElement);
     render(clock.getDelta());
     stats.update();
-    window.requestAnimationFrame(animate, renderer.domElement);
 }
 
 function render(t) {

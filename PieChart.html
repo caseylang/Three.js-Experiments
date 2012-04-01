@@ -1,0 +1,282 @@
+<!doctype html>
+<html>
+<head>
+    <title>Pie Chart</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+
+    <script src="lib/three.js/build/Three.js" type="text/javascript"></script>
+    <script src="lib/three.js/examples/js/Detector.js" type="text/javascript"></script>
+    <script src="lib/jquery-1.7.1.min.js" type="text/javascript"></script>
+    <!-- https://github.com/mrdoob/stats.js -->
+    <script src="lib/three.js/examples/js/Stats.js" type="text/javascript"></script>
+
+    <script src="lib/threex/THREEx.FullScreen.js" type="text/javascript"></script>
+    <script src="lib/threex/THREEx.WindowResize.js" type="text/javascript"></script>
+    <style type="text/css">
+        body {
+            margin: 0px;
+            padding: 0px;
+            color: #fff;
+            font-family: Monospace;
+            font-size: 13px;
+            text-align: center;
+            font-weight: bold;
+
+            background-color: #000;
+            overflow: hidden;
+        }
+
+        #info {
+            position: absolute;
+            top: 0px;
+            left: 0px;
+            height: 50px;
+            color: #000;
+            background-color: #a9a9a9;
+            padding: 5px;
+            font-family: Monospace;
+            font-size: 13px;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+<div id="info">Graph Data<br/>
+
+    <div id="segNum" style="display: none">Segment Count:  </div>
+    <div id="segVal" style="display: none">Segment Value:  </div>
+</div>
+<script type="text/javascript">
+var clock = new THREE.Clock();
+var SCREEN_HEIGHT = window.innerHeight;
+var SCREEN_WIDTH = window.innerWidth;
+var stats;
+var camera, scene, projector, renderer, mesh, light, ambientLight;
+var piePieces = [], piece = 0;
+var paused = false;
+var down = false;
+var sx = 0, sy = 0;
+var rot = Math.PI / 3;
+var mouse = { x: 0, y: 0 }, INTERSECTED, INTERSECTED_CLICK;
+
+THREE.LeftAlign = 1;
+THREE.CenterAlign = 0;
+THREE.RightAlign = -1;
+THREE.TopAlign = -1;
+THREE.BottomAlign = 1;
+
+init();
+animate();
+
+function init() {
+    /*START SETUP*/
+    if (Detector.webgl) {
+        renderer = new THREE.WebGLRenderer({
+            antialias: true    // to get smoother output
+        });
+        renderer.setClearColorHex(0xEEEEEE, 1);
+    } else {
+        Detector.addGetWebGLMessage();
+        return true;
+    }
+    renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+    document.body.appendChild(renderer.domElement);
+
+    stats = new Stats();
+    stats.domElement.style.position = 'absolute';
+    stats.domElement.style.top = '70px';
+    document.body.appendChild(stats.domElement);
+
+    renderer.setClearColorHex(0xEEEEEE, 1.0);
+    renderer.shadowMapEnabled = true;
+    renderer.shadowMapSoft = true;
+    renderer.shadowMapWidth = 1024;
+    renderer.shadowMapHeight = 1024;
+    renderer.shadowCameraFov = 35;
+
+    scene = new THREE.Scene();
+
+    camera = new THREE.PerspectiveCamera(45, SCREEN_WIDTH / SCREEN_HEIGHT, 1, 10000);
+    camera.position.y = 150;
+    camera.position.x = Math.cos(rot) * 170;
+    camera.position.z = Math.sin(rot) * 170;
+    scene.add(camera);
+
+    // transparently support window resize
+    THREEx.WindowResize.bind(renderer, camera);
+    // allow 'f' to go fullscreen where this feature is supported
+    if (THREEx.FullScreen.available()) {
+        THREEx.FullScreen.bindKey();
+    }
+
+    light = new THREE.SpotLight();
+    light.castShadow = true;
+    light.position.set(-170, 300, 100);
+    scene.add(light);
+
+    ambientLight = new THREE.PointLight(0x442255);
+    ambientLight.position.set(20, 150, -120);
+    scene.add(ambientLight);
+
+    var plane = new THREE.Mesh(
+            new THREE.CubeGeometry(200, 20, 200),
+            new THREE.MeshLambertMaterial({color: 0xFFFFFF}));
+    plane.position.y = -40;
+    plane.receiveShadow = true;
+    plane.doubleSided = true;
+    plane.name = 'Plane';
+    scene.add(plane);
+    /*END SETUP*/
+
+    var segments = Math.floor(Math.random() * 25);
+    var values = [];
+    for (var i = 0; i<segments; i++) {
+        values[i] = Math.floor(Math.random() * 200);
+    }
+    scene.add(pieGraph(values, 10));
+    $('#segNum').html('Segment Count: ' + segments);
+    $('#segNum').show();
+
+    renderer.render(scene, camera);
+    projector = new THREE.Projector();
+    document.addEventListener('mousemove', onDocumentMouseMove, false);
+}
+
+function animate() {
+    window.requestAnimationFrame(animate, renderer.domElement);
+    render(clock.getDelta());
+    stats.update();
+}
+
+function render(t) {
+    if (!paused) {
+        renderer.clear();
+        camera.lookAt(scene.position);
+        renderer.render(scene, camera);
+
+        if (!down) {
+            var intersects = findIntersections();
+            if (intersects.length > 0) {
+                if (INTERSECTED != intersects[ 0 ].object && intersects[ 0 ].object.name != 'Plane') {
+                    if (INTERSECTED) {
+                        INTERSECTED.material.color.setHex(INTERSECTED.currentHex);
+                    }
+                    INTERSECTED = intersects[ 0 ].object;
+                    INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
+                    INTERSECTED.material.color.setHex(0xffaa55);
+                }
+            } else {
+                if (INTERSECTED) {
+                    INTERSECTED.material.color.setHex(INTERSECTED.currentHex);
+                }
+                INTERSECTED = null;
+            }
+        }
+    }
+}
+
+function pieGraph(values, thickness) {
+    var pieGraph = new THREE.Object3D();
+    var sum = 0;
+    for (var i = 0; i < values.length; i++) {
+        sum += values[i];
+    }
+
+    var delta = (Math.PI * 2 / sum);
+    var cur = 0;
+    for (var i = 0; i < values.length; i++) {
+        piePieces[piece] = [];
+        pieGraph.add(pieSegment(cur, cur + delta * values[i], thickness, values[i], sum));
+        cur += delta * values[i];
+        piece++;
+    }
+    return pieGraph;
+}
+
+function pieSegment(start, end, thickness, value, sum) {
+    var material = new THREE.MeshPhongMaterial({ambient: 0x808080, color:end*0xFFAA55*Math.random()});
+
+    var geometry = new THREE.Shape();
+    geometry.moveTo(0, 0);
+    geometry.arc(0, 0, 40, start, end, false);
+    geometry.lineTo(0, 0);
+
+    piePieces[piece].geo = geometry.extrude({amount: thickness, bevelEnabled: false, curveSegments: 50, steps: 2 });
+    piePieces[piece].geo.dynamic = true
+    piePieces[piece].geo.__dirtyVertices = true;
+    piePieces[piece].baseColor = material.color.getHex();
+    piePieces[piece].value = value;
+
+    var segment = new THREE.Mesh(piePieces[piece].geo, material);
+    segment.name = piePieces[piece].name = piece;
+    segment.rotation.x = Math.PI / 2;
+    return segment;
+}
+
+function findIntersections() {
+    var vector = new THREE.Vector3(mouse.x, mouse.y, 1);
+    projector.unprojectVector(vector, camera);
+    var ray = new THREE.Ray(camera.position, vector.subSelf(camera.position).normalize());
+    return ray.intersectScene(scene);
+}
+
+document.ondblclick = function () {
+    var intersects = findIntersections();
+    if (intersects.length > 0) {
+        if (INTERSECTED_CLICK != intersects[ 0 ].object && intersects[ 0 ].object.name != 'Plane') {
+            if (INTERSECTED_CLICK) {
+                INTERSECTED_CLICK.material.color.setHex(piePieces[INTERSECTED_CLICK.name].baseColor);
+            }
+            INTERSECTED_CLICK = intersects[ 0 ].object;
+            INTERSECTED_CLICK.material.color.setHex(0xa854fe);
+            INTERSECTED.currentHex = 0xa854fe;
+            $('#segVal').html('Segment Value: ' + piePieces[INTERSECTED_CLICK.name].value);
+            $('#segVal').show();
+        }
+    }
+}
+
+function onDocumentMouseMove(event) {
+    event.preventDefault();
+    mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+    mouse.y = -( event.clientY / window.innerHeight ) * 2 + 1;
+}
+
+window.onmousedown = function (ev) {
+    down = true;
+    sx = ev.clientX;
+    sy = ev.clientY;
+};
+
+window.onmouseup = function () {
+    down = false;
+};
+
+window.onmousemove = function (ev) {
+    if (down) {
+        var dx = ev.clientX - sx;
+        var dy = ev.clientY - sy;
+        rot += dx * 0.01;
+        camera.position.x = Math.cos(rot) * 170;
+        camera.position.z = Math.sin(rot) * 170;
+        camera.position.y = Math.max(5, camera.position.y + dy);
+        sx += dx;
+        sy += dy;
+    }
+}
+
+onmessage = function (ev) {
+    paused = (ev.data == 'pause');
+};
+
+function partial(func /*, 0..n args */) {
+    var args = Array.prototype.slice.call(arguments, 1);
+    return function () {
+        var allArguments = args.concat(Array.prototype.slice.call(arguments));
+        return func.apply(this, allArguments);
+    };
+}
+</script>
+</body>
+</html>
