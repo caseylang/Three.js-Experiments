@@ -38,20 +38,15 @@
 </head>
 
 <body>
-<div id="info">
-    <input type="button" value="Red" onclick="meshes[0].started = true;"><br/>
-    <input type="button" value="Green" onclick="meshes[1].started = true;"><br/>
-    <input type="button" value="Blue" onclick="meshes[2].started = true;"><br/>
-    <input type="button" value="Pink" onclick="meshes[3].started = true;"><br/>
-
-</div>
 <script>
-if (!Detector.webgl) Detector.addGetWebGLMessage();
+if (!Detector.webgl) {
+    Detector.addGetWebGLMessage();
+}
 var clock = new THREE.Clock();
 var SCREEN_HEIGHT = window.innerHeight;
 var SCREEN_WIDTH = window.innerWidth;
 var stats;
-var scatterPlot
+var scatterPlot;
 var camera, scene, renderer, sprite, mesh, meshes = [];
 var p;
 var paused = false;
@@ -64,11 +59,8 @@ THREE.RightAlign = -1;
 THREE.TopAlign = -1;
 THREE.BottomAlign = 1;
 
-init();
-animate();
-
 function init() {
-    renderer = new THREE.WebGLRenderer({antialias:true});
+    renderer = new THREE.WebGLRenderer({antialias: true});
     renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
     document.body.appendChild(renderer.domElement);
 
@@ -91,49 +83,72 @@ function init() {
     scene.add(scatterPlot);
 
     scatterPlot.rotation.y = 0.5;
-    function v(x, y, z) {
-        return new THREE.Vertex(new THREE.Vector3(x, y, z));
-    }
+
+    var lineCord = [
+        [-50, 0, 0],
+        [50, 0, 0],
+        [0, -50, 0],
+        [0, 50, 0],
+        [0, 0, -50],
+        [0, 0, 50],
+        [-50, 50, -50],
+        [50, 50, -50],
+        [-50, -50, -50],
+        [50, -50, -50],
+        [-50, 50, 50],
+        [50, 50, 50],
+        [-50, -50, 50],
+        [50, -50, 50],
+        [-50, 0, 50],
+        [50, 0, 50],
+        [-50, 0, -50],
+        [50, 0, -50],
+        [-50, 50, 0],
+        [50, 50, 0],
+        [-50, -50, 0],
+        [50, -50, 0],
+        [50, -50, -50],
+        [50, 50, -50],
+        [-50, -50, -50],
+        [-50, 50, -50],
+        [50, -50, 50],
+        [50, 50, 50],
+        [-50, -50, 50],
+        [-50, 50, 50],
+        [0, -50, 50],
+        [0, 50, 50],
+        [0, -50, -50],
+        [0, 50, -50],
+        [50, -50, 0],
+        [50, 50, 0],
+        [-50, -50, 0],
+        [-50, 50, 0],
+        [50, 50, -50],
+        [50, 50, 50],
+        [50, -50, -50],
+        [50, -50, 50],
+        [-50, 50, -50],
+        [-50, 50, 50],
+        [-50, -50, -50],
+        [-50, -50, 50],
+        [-50, 0, -50],
+        [-50, 0, 50],
+        [50, 0, -50],
+        [50, 0, 50],
+        [0, 50, -50],
+        [0, 50, 50],
+        [0, -50, -50],
+        [0, -50, 50]
+    ];
 
     var lineGeo = new THREE.Geometry();
-    lineGeo.vertices.push(
-            v(-50, 0, 0), v(50, 0, 0),
-            v(0, -50, 0), v(0, 50, 0),
-            v(0, 0, -50), v(0, 0, 50),
+    for (var x = 0; x < lineCord.length; x++) {
+        lineGeo.vertices.push(new THREE.Vertex(new THREE.Vector3(lineCord[x][0], lineCord[x][1], lineCord[x][2])));
+    }
 
-            v(-50, 50, -50), v(50, 50, -50),
-            v(-50, -50, -50), v(50, -50, -50),
-            v(-50, 50, 50), v(50, 50, 50),
-            v(-50, -50, 50), v(50, -50, 50),
-
-            v(-50, 0, 50), v(50, 0, 50),
-            v(-50, 0, -50), v(50, 0, -50),
-            v(-50, 50, 0), v(50, 50, 0),
-            v(-50, -50, 0), v(50, -50, 0),
-
-            v(50, -50, -50), v(50, 50, -50),
-            v(-50, -50, -50), v(-50, 50, -50),
-            v(50, -50, 50), v(50, 50, 50),
-            v(-50, -50, 50), v(-50, 50, 50),
-
-            v(0, -50, 50), v(0, 50, 50),
-            v(0, -50, -50), v(0, 50, -50),
-            v(50, -50, 0), v(50, 50, 0),
-            v(-50, -50, 0), v(-50, 50, 0),
-
-            v(50, 50, -50), v(50, 50, 50),
-            v(50, -50, -50), v(50, -50, 50),
-            v(-50, 50, -50), v(-50, 50, 50),
-            v(-50, -50, -50), v(-50, -50, 50),
-
-            v(-50, 0, -50), v(-50, 0, 50),
-            v(50, 0, -50), v(50, 0, 50),
-            v(0, 50, -50), v(0, 50, 50),
-            v(0, -50, -50), v(0, -50, 50)
-    );
-    var lineMat = new THREE.LineBasicMaterial({color:0x808080, lineWidth:1, opacity:.5});
+    var lineMat = new THREE.LineBasicMaterial({color: 0x808080, lineWidth: 1, opacity: .5});
     var line = new THREE.Line(lineGeo, lineMat);
-    line.type = THREE.Lines;
+    line.type = THREE.LinePieces;
     scatterPlot.add(line);
 
     var titleX = createText2D('-X');
@@ -160,10 +175,12 @@ function init() {
     titleX.position.z = 60;
     scatterPlot.add(titleX);
 
-    var pointCount = 10000;
+    var pointCount = 250000;
     var groups = 4;
     var pointGeo = [];
-    for (var x = 0; x < groups; x++) pointGeo[x] = new THREE.Geometry();
+    for (var x = 0; x < groups; x++) {
+        pointGeo[x] = new THREE.Geometry();
+    }
 
     sprite = THREE.ImageUtils.loadTexture("lib/images/particle_alpha_blending.png");
 
@@ -181,7 +198,9 @@ function init() {
         pointGeo[index].vertices[group].speed = (z / 100) * (x / 100);
     }
 
-    for (x = 0; x < groups; x++) createMesh(pointGeo[x], scene, color[x]);
+    for (x = 0; x < groups; x++) {
+        scatterPlot.add(createMesh(pointGeo[x], scene, color[x]));
+    }
 
     renderer.render(scene, camera);
     window.addEventListener('resize', onWindowResize, false);
@@ -203,28 +222,30 @@ function createMesh(originalGeometry, scene, color) {
     }
 
     var material = new THREE.ParticleBasicMaterial({
-        size:2.5,
-        map:sprite,
-        color:color,
-        blending:THREE.AdditiveBlending,
-        transparent:true});
+        size: 2.5,
+        map: sprite,
+        color: color,
+        blending: THREE.AdditiveBlending,
+        transparent: true});
     mesh = new THREE.ParticleSystem(geometry, material);
-    mesh.sortParticles = true;
-
-    scatterPlot.add(mesh);
+    // This slows things down by a lot. With it on I could show 17k easily. With it off I
+    // can show 200k
+    // mesh.sorqtParticles = true;
 
     meshes.push({
-        mesh:mesh,
-        vertices:geometry.vertices,
-        vertices_tmp:vertices_tmp,
-        vl:vl,
-        down:0,
-        up:0,
-        direction:-1,
-        speed:{ up:15, down:20},
-        started:false,
-        dynamic:true
+        mesh: mesh,
+        vertices: geometry.vertices,
+        vertices_tmp: vertices_tmp,
+        vl: vl,
+        down: 0,
+        up: 0,
+        direction: -1,
+        speed: { up: 15, down: 20},
+        started: false,
+        dynamic: true
     });
+
+    return mesh;
 }
 
 function createTextCanvas(text, color, font, size) {
@@ -249,7 +270,7 @@ function createText2D(text, color, font, size, segW, segH) {
     var tex = new THREE.Texture(canvas);
     tex.needsUpdate = true;
     var planeMat = new THREE.MeshBasicMaterial({
-        map:tex, color:0xffffff, transparent:true
+        map: tex, color: 0xffffff, transparent: true
     });
     var mesh = new THREE.Mesh(plane, planeMat);
     mesh.scale.set(0.25, 0.25, 0.25);
@@ -258,6 +279,7 @@ function createText2D(text, color, font, size, segW, segH) {
 }
 
 window.onmousedown = function (ev) {
+    paused = false;
     down = true;
     sx = ev.clientX;
     sy = ev.clientY;
@@ -265,10 +287,14 @@ window.onmousedown = function (ev) {
 
 window.onmouseup = function () {
     down = false;
+    // Setting pause all the time frees up the cpu by a lot, but it will also mess up the
+    // render. Implement a semaphore variable.
+    paused = true;
 };
 
 window.onmousemove = function (ev) {
     if (down) {
+        paused = false;
         var dx = ev.clientX - sx;
         var dy = ev.clientY - sy;
         scatterPlot.rotation.y += dx * 0.01;
@@ -280,19 +306,20 @@ window.onmousemove = function (ev) {
 
 function animate() {
     render();
+    // ignore pausing till fixed if (!paused) render();
     stats.update();
     window.requestAnimationFrame(animate, renderer.domElement);
 }
 
 var j, i, jl, cm, data, vertices, vertices_tmp, vl, d, vt, delta;
 function render() {
-    if (!paused) {
-        renderer.clear();
-        delta = 10 * clock.getDelta();
-        delta = delta < 2 ? delta : 2;
+    renderer.clear();
+    delta = 10 * clock.getDelta();
+    delta = delta < 2 ? delta : 2;
 
-        for (j = 0, jl = meshes.length; j < jl; j++) {
-            data = meshes[ j ];
+    for (j = 0, jl = meshes.length; j < jl; j++) {
+        data = meshes[ j ];
+        if (data.started) {
             mesh = data.mesh;
             vertices = data.vertices;
             vertices_tmp = data.vertices_tmp;
@@ -305,7 +332,7 @@ function render() {
                 vt = vertices_tmp[ i ];
 
                 // falling down
-                if (data.direction < 0 && data.started) {
+                if (data.direction < 0) {
                     if (p.y > -50) {
                         p.x += 1.5 * ( 0.50 - Math.random() ) * data.speed.down * delta;
                         p.y += 3.0 * ( 0.25 - Math.random() ) * data.speed.down * delta;
@@ -319,7 +346,7 @@ function render() {
                 }
 
                 // rising up
-                if (data.direction > 0 && data.started) {
+                if (data.direction > 0) {
                     d = Math.abs(p.x - vt[ 0 ]) + Math.abs(p.y - vt[ 1 ]) + Math.abs(p.z - vt[ 2 ]);
 
                     if (d > 1) {
@@ -340,6 +367,7 @@ function render() {
                 data.direction = 1;
                 data.down = 0;
                 data.started = false;
+                paused = true;
 
                 for (i = 0; i < vl; i++) {
                     vertices_tmp[ i ][ 3 ] = 0;
@@ -351,6 +379,7 @@ function render() {
                 data.direction = -1;
                 data.up = 0;
                 data.started = false;
+                paused = true;
 
                 for (i = 0; i < vl; i++) {
                     vertices_tmp[ i ][ 4 ] = 0;
@@ -358,10 +387,10 @@ function render() {
             }
             mesh.geometry.__dirtyVertices = true;
         }
-
-        camera.lookAt(scene.position);
-        renderer.render(scene, camera);
     }
+
+    camera.lookAt(scene.position);
+    renderer.render(scene, camera);
 }
 
 function onWindowResize(event) {
@@ -373,10 +402,16 @@ function onWindowResize(event) {
     camera.lookAt(scene.position);
 }
 
-onmessage = function (ev) {
-    paused = (ev.data == 'pause');
-};
+init();
+animate();
 </script>
+
+<div id="info">
+    <input type="button" value="Red" onclick="meshes[0].started = true; paused = false;"><br/>
+    <input type="button" value="Green" onclick="meshes[1].started = true; paused = false;"><br/>
+    <input type="button" value="Blue" onclick="meshes[2].started = true; paused = false;"><br/>
+    <input type="button" value="Pink" onclick="meshes[3].started = true; paused = false;"><br/>
+</div>
 </body>
 
 </html>
