@@ -1,10 +1,10 @@
 <html>
 <head>
-    <script src="lib/three.js/build/Three.js" type="text/javascript"></script>
+    <script src="lib/three.min.js" type="text/javascript"></script>
     <script src="lib/jquery-1.7.1.min.js" type="text/javascript"></script>
-    <script src="lib/three.js/examples/js/Detector.js"></script>
-    <script src="lib/three.js/examples/js/Stats.js"></script>
-    <script src="lib/tween.js/build/Tween.js"></script>
+    <script src="lib/Detector.js" type="text/javascript"></script>
+    <script src="lib/stats.min.js" type="text/javascript"></script>
+    <script src="lib/tween.min.js" type="text/javascript"></script>
     <style type="text/css">
         body {
             margin: 0px;
@@ -24,7 +24,7 @@
             top: 0px;
             left: 0px;
             width: 100px;
-            height: 30px;
+            height: 60px;
             color: #000;
             background-color: #a9a9a9;
             padding: 5px;
@@ -36,9 +36,8 @@
 </head>
 
 <body>
-<div id="info">Select a bar<br/>
-
-    <div id="barName" style="display: none">No bar selected</div>
+<div id="info">Double click on a bar to select it.<br/>
+    <span id="barName" style="display: none">No bar selected</span>
 </div>
 <script>
 // <!--
@@ -47,7 +46,7 @@ var clock = new THREE.Clock();
 var SCREEN_HEIGHT = window.innerHeight;
 var SCREEN_WIDTH = window.innerWidth;
 var stats, info = $('#barName');
-var camera, scene, projector, renderer, mesh, light, ambientLight, barGraph;
+var camera, scene, projector, renderer, light, ambientLight;
 var grid = [];
 var paused = false;
 var down = false;
@@ -65,7 +64,6 @@ THREE.TopAlign = -1;
 THREE.BottomAlign = 1;
 
 init();
-TWEEN.start();
 animate();
 
 function init() {
@@ -75,10 +73,9 @@ function init() {
 
     stats = new Stats();
     stats.domElement.style.position = 'absolute';
-    stats.domElement.style.top = '40px';
+    stats.domElement.style.top = '70px';
     document.body.appendChild(stats.domElement);
 
-    renderer.setClearColorHex(0xEEEEEE, 1.0);
     renderer.shadowMapEnabled = true;
     renderer.shadowMapSoft = true;
     renderer.shadowMapWidth = 1024;
@@ -98,25 +95,21 @@ function init() {
     light.position.set(-170, 300, 100);
     scene.add(light);
 
-    ambientLight = new THREE.PointLight(0x442255);
+    ambientLight = new THREE.PointLight(0xFFFFFF);
     ambientLight.position.set(20, 150, -120);
     scene.add(ambientLight);
 
     var plane = new THREE.Mesh(
             new THREE.CubeGeometry(200, 20, 200),
-            new THREE.MeshLambertMaterial({color:0xFFFFFF}));
+            new THREE.MeshPhongMaterial({color:0xFFFFFF}));
     plane.position.y = -10;
     plane.receiveShadow = true;
     plane.doubleSided = true;
     plane.name = 'Plane';
     scene.add(plane);
 
-    barGraph = new THREE.Object3D();
-    scene.add(barGraph);
-
     dynamicHeight.y = 1;
-    TWEEN.removeAll();
-
+    var x_drawn = false;
     var length = {x:10, y:10};
     //todo: this is cheating. You'll need to find a max if you want to use real data.
     max = ((length.x - 1) * (length.y - 1)) + 5;
@@ -124,13 +117,13 @@ function init() {
         drawYLabel(y, length);
         for (var x = 0; x < length.x; x++) {
             grid[running] = [];
-            drawXLabel(x, length);
+            if(x_drawn === false){drawXLabel(x, length);}
             grid[running].height = (x * y) + 5;
             drawBar(y, x, length, grid[running].height);
             running++;
         }
+        x_drawn = true;
     }
-
     renderer.render(scene, camera);
     projector = new THREE.Projector();
     window.addEventListener('resize', onWindowResize, false);
@@ -138,41 +131,50 @@ function init() {
 }
 
 function updateBar(j) {
-    grid[j].geo.__dirtyVertices = true;
-    grid[j].geo.vertices[0].position.y = dynamicHeight.y;
-    grid[j].geo.vertices[1].position.y = dynamicHeight.y;
-    grid[j].geo.vertices[4].position.y = dynamicHeight.y;
-    grid[j].geo.vertices[5].position.y = dynamicHeight.y;
+    grid[j].geo.verticesNeedUpdate = true;
+    grid[j].geo.vertices[0].y = dynamicHeight.y;
+    grid[j].geo.vertices[1].y = dynamicHeight.y;
+    grid[j].geo.vertices[4].y = dynamicHeight.y;
+    grid[j].geo.vertices[5].y = dynamicHeight.y;
 }
 
 function completeBar(j) {
     grid[j].done = true;
+    grid[j].geo.verticesNeedUpdate = true;
+    grid[j].geo.normalsNeedUpdate = true;
+    grid[j].geo.computeFaceNormals();
     grid[j].geo.computeBoundingSphere();
     running--;
 }
 
 function drawBar(y, x, length, height) {
     //Draws the bars
+    //Colors are coming out different when set as HSL then
+    //converted to HEX. Hack around
     var mat = new THREE.MeshPhongMaterial({color:0xFFAA55});
-    mat.color.setHSV(0.2 + 0.8 * height / max, 0.8, 1);
+    var color = new THREE.Color();
+    color.offsetHSL(0.4 + 0.8 * height / max, 0.85, 1);
+    mat.color.setHex(color.getHex());
+
     grid[running].geo = new THREE.CubeGeometry(8, 2, 8);
-    grid[running].geo.dynamic = true
-    grid[running].geo.__dirtyVertices = true;
-    grid[running].baseColor = mat.color.getHex();
+    grid[running].geo.dynamic = true;
+    grid[running].geo.verticesNeedUpdate = true;
+    grid[running].baseColor = color.getHex();
+
     var mesh = new THREE.Mesh(grid[running].geo, mat);
     mesh.position.x = (x - (length.x - 1) / 2) * 16;
-    mesh.position.y = 2 / 2;
+    mesh.position.y = 1;
     mesh.position.z = -(y - (length.y - 1) / 2) * 16;
     mesh.castShadow = mesh.receiveShadow = true;
     mesh.name = grid[running].name = running;
     grid[running].done = false;
-    barGraph.add(mesh);
+    scene.add(mesh);
 
     var update = partial(updateBar, running);
-    var complete = partial(completeBar, running)
+    var complete = partial(completeBar, running);
     grid[running].tween = new TWEEN.Tween(dynamicHeight)
             .to({y:(height / max * 80)}, 3500)
-            .easing(TWEEN.Easing.Elastic.EaseOut)
+            .easing(TWEEN.Easing.Elastic.Out)
             .onUpdate(update)
             .onComplete(complete)
             .delay(1000)
@@ -187,7 +189,7 @@ function drawYLabel(y, length) {
     title.position.z = -(y - (length.y - 1) / 2) * 16;
     title.position.y = 1;
     title.rotation.x = -Math.PI / 2;
-    barGraph.add(title);
+    scene.add(title);
 }
 
 function drawXLabel(x, length) {
@@ -199,7 +201,7 @@ function drawXLabel(x, length) {
     title.position.z = -(-1 - (length.y - 1) / 2) * 16;
     title.position.y = 1;
     title.rotation.x = -Math.PI / 2;
-    barGraph.add(title);
+    scene.add(title);
 }
 
 function createTextCanvas(text, color, font, size) {
@@ -233,8 +235,8 @@ function createText2D(text, color, font, size, segW, segH) {
 
 function alignPlane(plane, horizontalAlign, verticalAlign) {
     var obj = new THREE.Object3D();
-    var u = plane.geometry.vertices[0].position;
-    var v = plane.geometry.vertices[plane.geometry.vertices.length - 1].position;
+    var u = plane.geometry.vertices[0];
+    var v = plane.geometry.vertices[plane.geometry.vertices.length - 1];
     var width = Math.abs(u.x - v.x);
     var height = Math.abs(u.y - v.y);
     plane.position.x = (width / 2) * horizontalAlign;
@@ -252,7 +254,7 @@ function onDocumentMouseMove(event) {
 document.ondblclick = function () {
     var intersects = findIntersections();
     if (intersects.length > 0) {
-        if (INTERSECTED_CLICK != intersects[ 0 ].object && intersects[ 0 ].object.name != 'Plane') {
+        if (INTERSECTED_CLICK != intersects[ 0 ].object && intersects[ 0 ].object.name !== 'Plane') {
             if (INTERSECTED_CLICK) {
                 INTERSECTED_CLICK.material.color.setHex(grid[INTERSECTED_CLICK.name].baseColor);
             }
@@ -263,7 +265,7 @@ document.ondblclick = function () {
             info.show();
         }
     }
-}
+};
 
 window.onmousedown = function (ev) {
     down = true;
@@ -286,25 +288,25 @@ window.onmousemove = function (ev) {
         sx += dx;
         sy += dy;
     }
-}
+};
 
 function animate() {
     window.requestAnimationFrame(animate, renderer.domElement);
-    render(clock.getDelta());
+    render();
     stats.update();
 }
 
-function render(t) {
+function render() {
     if (!paused) {
         renderer.clear();
         camera.lookAt(scene.position);
         renderer.render(scene, camera);
 
         TWEEN.update();
-        if (!down) {
+        if (!down && running === 0) {
             var intersects = findIntersections();
             if (intersects.length > 0) {
-                if (INTERSECTED != intersects[ 0 ].object && intersects[ 0 ].object.name != 'Plane') {
+                if (INTERSECTED != intersects[ 0 ].object && intersects[ 0 ].object.name !== 'Plane') {
                     if (INTERSECTED) {
                         INTERSECTED.material.color.setHex(INTERSECTED.currentHex);
                     }
@@ -325,8 +327,8 @@ function render(t) {
 function findIntersections() {
     var vector = new THREE.Vector3(mouse.x, mouse.y, 1);
     projector.unprojectVector(vector, camera);
-    var ray = new THREE.Ray(camera.position, vector.subSelf(camera.position).normalize());
-    return ray.intersectObjects(scene.children);
+    var raycaster = new THREE.Raycaster(camera.position, vector.sub(camera.position).normalize());
+    return raycaster.intersectObjects(scene.children);
 }
 
 function onWindowResize(event) {
@@ -338,8 +340,8 @@ function onWindowResize(event) {
     camera.lookAt(scene.position);
 }
 
-onmessage = function (ev) {
-    paused = (ev.data == 'pause');
+var onmessage = function (ev) {
+    paused = (ev.data === 'pause');
 };
 
 function partial(func /*, 0..n args */) {
